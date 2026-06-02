@@ -1,5 +1,15 @@
 #include "uefi.h"
 
+// Implémentation maison de memcpy requise par le compilateur pour les initialisations de tableaux
+void *memcpy(void *dest, const void *src, UINTN n) {
+    unsigned char *d = (unsigned char *)dest;
+    const unsigned char *s = (const unsigned char *)src;
+    for (UINTN i = 0; i < n; i++) {
+        d[i] = s[i];
+    }
+    return dest;
+}
+
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     // Chaîne UTF-16 terminée par un caractère nul (0)
     // \r\n est le retour à la ligne standard pour l'UEFI
