@@ -10,6 +10,19 @@ typedef long long EFI_STATUS;
 // Codes de statut standard
 #define EFI_SUCCESS 0
 
+// Types d'allocation pour la mémoire
+typedef enum {
+    EfiMaxAllocateType
+} EFI_ALLOCATE_TYPE;
+
+// Types de mémoire de l'UEFI (on utilise LoaderData pour notre carte mémoire)
+typedef enum {
+    EfiReservedMemoryType,
+    EfiLoaderCode,
+    EfiLoaderData, // Mémoire de données pour le bootloader/noyau
+    EfiMaxMemoryType
+} EFI_MEMORY_TYPE;
+
 // Déclaration anticipée du protocole de sortie texte
 struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
 
@@ -42,7 +55,7 @@ typedef struct {
     void *RestoreTPL;
     void *AllocatePages;
     void *FreePages;
-    // Fonction critique pour récupérer la carte de la mémoire RAM
+    // Fonction pour récupérer la carte de la mémoire RAM
     EFI_STATUS (*GetMemoryMap)(
         UINTN *MemoryMapSize,
         EFI_MEMORY_DESCRIPTOR *MemoryMap,
@@ -50,10 +63,15 @@ typedef struct {
         UINTN *DescriptorSize,
         unsigned int *DescriptorVersion
     );
-    // ... Le reste des Boot Services est ignoré pour le moment
+    // Nouvelle fonction : Allouer un espace mémoire dynamique (comme malloc)
+    EFI_STATUS (*AllocatePool)(
+        EFI_MEMORY_TYPE PoolType,
+        UINTN Size,
+        void **Buffer
+    );
 } EFI_BOOT_SERVICES;
 
-// La table système principale (fournie par le firmware au démarrage)
+// La table système principale
 typedef struct {
     char Header[24];
     void *ConIn;
@@ -61,7 +79,7 @@ typedef struct {
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConOut;
     void *StandardError;
     void *In;
-    EFI_BOOT_SERVICES *BootServices; // Ajout de l'accès aux Boot Services
+    EFI_BOOT_SERVICES *BootServices;
 } EFI_SYSTEM_TABLE;
 
 #endif // UEFI_H
