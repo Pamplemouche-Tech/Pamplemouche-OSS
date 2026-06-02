@@ -1,0 +1,34 @@
+name: Compilation Bootloader UEFI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Récupère le code source du dépôt Git
+    - name: Récupérer le code
+      uses: actions/checkout@v4
+
+    # 2. Installe Clang (souvent déjà présent, mais on s'assure qu'il est là)
+    - name: Installer Clang
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang
+
+    # 3. Exécute la commande de compilation exacte
+    - name: Compiler le Bootloader
+      run: |
+        clang -target x86_64-unknown-windows -ffreestanding -nostdlib -mno-red-zone -shared -e efi_main -o BOOTX64.EFI main.c
+
+    # 4. Sauvegarde le binaire pour que tu puisses le télécharger depuis GitHub
+    - name: Sauvegarder le binaire EFI
+      uses: actions/upload-artifact@v4
+      with:
+        name: uefi-bootloader
+        path: BOOTX64.EFI
