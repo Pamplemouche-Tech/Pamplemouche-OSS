@@ -15,18 +15,17 @@ jobs:
     - name: Récupérer le code
       uses: actions/checkout@v4
 
-    # 2. Installe Clang et LLD (le linker requis pour la cross-compilation)
-    - name: Installer Clang et LLD
+    # 2. Installe Clang et LLD
       run: |
         sudo apt-get update
         sudo apt-get install -y clang lld
 
-    # 3. Exécute la commande de compilation exacte avec lld
+    # 3. Exécute la commande de compilation avec le bon drapeau de point d'entrée
     - name: Compiler le Bootloader
       run: |
-        clang -target x86_64-unknown-windows -fuse-ld=lld -ffreestanding -nostdlib -mno-red-zone -shared -e efi_main -o BOOTX64.EFI main.c
+        clang -target x86_64-unknown-windows -fuse-ld=lld -ffreestanding -nostdlib -mno-red-zone -shared -Wl,-entry:efi_main -o BOOTX64.EFI main.c
 
-    # 4. Sauvegarde le binaire pour que tu puisses le télécharger depuis GitHub
+    # 4. Sauvegarde le binaire pour le téléchargement
     - name: Sauvegarder le binaire EFI
       uses: actions/upload-artifact@v4
       with:
