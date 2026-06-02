@@ -19,14 +19,14 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     };
     SystemTable->ConOut->OutputString(SystemTable->ConOut, message);
 
-    // Variables requises pour stocker la carte mémoire
+    // Variables pour la carte mémoire
     UINTN memory_map_size = 0;
-    EFI_MEMORY_DESCRIPTOR *memory_map = (void*)0; // Tampon nul au départ pour demander la taille requise
+    EFI_MEMORY_DESCRIPTOR *memory_map = (void*)0;
     UINTN map_key = 0;
     UINTN descriptor_size = 0;
     unsigned int descriptor_version = 0;
 
-    // Premier appel à GetMemoryMap avec un tampon de 0 pour obtenir la taille réelle nécessaire dans `memory_map_size`
+    // 1. Premier appel pour obtenir la taille requise dans `memory_map_size`
     SystemTable->BootServices->GetMemoryMap(
         &memory_map_size, 
         memory_map, 
@@ -35,12 +35,33 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
         &descriptor_version
     );
 
-    // Message pour confirmer que l'analyse de la mémoire a commencé
-    uint16_t mem_message[] = {
-        'C', 'a', 'r', 't', 'e', ' ', 'm', 'e', 'm', 'o', 'i', 'r', 'e', ' ', 'a', 'n', 'a', 'l', 'y', 's', 'e', 'e', '.',
-        '\r', '\n', 0
-    };
-    SystemTable->ConOut->OutputString(SystemTable->ConOut, mem_message);
+    // On ajoute une marge de sécurité au cas où l'allocation elle-même modifierait la carte mémoire
+    memory_map_size += 2 * descriptor_size;
+
+    // 2. Allocation du tampon en mémoire RAM via AllocatePool
+    SystemTable->BootServices->AllocatePool(
+        EfiLoaderData, 
+        memory_map_size, 
+        (void**)&memory_map
+    );
+
+    // 3. Second appel pour remplir le tampon alloué avec la vraie carte mémoire
+    EFI_STATUS status = SystemTable->BootServices->GetMemoryMap(
+        &memory_map_size, 
+        memory_map, 
+        &map_key, 
+        &descriptor_size, 
+        &descriptor_version
+    );
+
+    // Si le statut est EFI_SUCCESS (0), la carte mémoire est chargée en RAM !
+    if (status == EFI_SUCCESS) {
+        uint16_t success_message[] = {
+            'C', 'a', 'r', 't', 'e', ' ', 'm', 'e', 'm', 'o', 'i', 'r', 'e', ' ', 'c', 'h', 'a', 'r', 'g', 'e', 'e', ' ', 'e', 'n', ' ', 'R', 'A', 'M', '.',
+            '\r', '\n', 0
+        };
+        SystemTable->ConOut->OutputString(SystemTable->ConOut, success_message);
+    }
 
     // On fige le processeur
     while(1) {
